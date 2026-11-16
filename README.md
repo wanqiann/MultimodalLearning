@@ -1,26 +1,8 @@
-# MARC
-
-MARC is a two-stage framework for missing-aware multimodal representation completion and reliability-aware phenotype clustering. It uses the completed Brain and Endocrine shared representations for clustering; the Host representation contributes to completion but is not a clustering view.
-
-## Overview
-
-```text
-multimodal features and observation masks
-        -> shared/private representation completion
-        -> brain_shared and endocrine_shared
-        -> reliability-adjusted view fusion
-        -> multi-view clustering
-        -> cross-seed evaluation and consensus labels
-```
-
-The completion model encodes each modality separately, learns shared and private latent representations, and predicts missing modality-level shared representations. Its feature reconstruction and latent completion objectives follow the training implementation in `models/completion.py`. The clustering stage uses separate view encoders/decoders, reconstruction and contrastive clustering objectives, learned global view weights, and fixed participant-specific reliability.
-
-For a participant and view, reliability is 1 for an observed view and the clipped held-out completion R² for a completed view. The learned global view weights are multiplied by these reliabilities and normalized for participant-level fusion.
 
 ## Repository structure
 
 ```text
-MARC/
+main/
 ├── models/
 │   ├── completion.py
 │   ├── clustering.py
@@ -49,16 +31,6 @@ python -m pip install -r requirements.txt
 
 Install a PyTorch build compatible with the hardware and CUDA version used for training.
 
-## Data format
-
-MARC does not distribute restricted participant data. Put an authorized input table at a local path and pass it with `--data_path`. The completion input is a CSV with one row per participant, a unique `eid` column, and the feature columns described by `data/feature_type.json`. It must include the active host, endocrine, and brain/dMRI PCA features; the model metadata marks model inputs and modality membership. Do not commit participant-level source data or model outputs to a public repository.
-
-The clustering stage expects one `seed_{n}/` folder per completion seed, containing:
-
-- `completed_shared_views.npz` with `participant_id`, `brain_shared`, `endocrine_shared`, `brain_observed`, and `endocrine_observed` arrays.
-- `reliability_calibration.csv` with the held-out R² rows for Brain completion from `host+endocrine` and Endocrine completion from `host+brain`.
-
-These files are produced by the completion run. The expected latent output is a completed shared representation, not a table with every raw feature imputed.
 
 ## Running representation completion
 
@@ -99,12 +71,6 @@ python -m tasks.build_consensus \
 ```
 
 Evaluation reports cosine silhouette, minimum cluster fraction, and pairwise ARI/NMI across runs. Consensus construction chooses the medoid partition by mean pairwise ARI, aligns cluster IDs with Hungarian matching, and resolves vote ties with the medoid labels.
-
-## Citation
-
-Citation information for the MARC study will be added upon publication. The cosine k-means++ initializer follows the algorithm of Arthur and Vassilvitskii, “k-means++: The Advantages of Careful Seeding,” SODA 2007.
-
-Clustering uses cosine k-means with greedy k-means++ initialization, provided by scikit-learn.
 
 ## License
 
